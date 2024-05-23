@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>University Announcements</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="container">
+        <h1>Crear Anuncio <i class="fas fa-bullhorn"></i></h1>
+        <form id="announcementForm">
+            <div class="form-group">
+                <label for="title">Título:</label>
+                <input type="text" class="form-control" id="title" name="title" required>
+            </div>
+            <div class="form-group">
+                <label for="content">Mensaje:</label>
+                <textarea class="form-control" id="content" name="content" required></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block"><i class="fas fa-paper-plane"></i> Enviar
+                Anuncio</button>
+        </form>
+
+        <hr>
+
+        <h1>Lista de Anuncios <i class="fas fa-list"></i></h1>
+        <ul id="announcementList" class="list-group">
+            <!-- Aquí se mostrarán los anuncios -->
+        </ul>
+
+        <hr>
+
+        <button id="deleteAllBtn" class="btn btn-danger">Eliminar Todos los Anuncios</button>
+    </div>
+
+    <!-- Firebase JavaScript SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore-compat.js"></script>
+
+    <script>
+        // Initialize Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyBxTzCL2BNqKY3G9w-K9V2JgAl8YRvhavs",
+            authDomain: "contadorsesion.firebaseapp.com",
+            projectId: "contadorsesion",
+            storageBucket: "contadorsesion.appspot.com",
+            messagingSenderId: "446205381840",
+            appId: "1:446205381840:web:86d0b8a4725f62bf27a2d5",
+            measurementId: "G-617ZK4YHVH"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // Manejar envío del formulario
+        document.getElementById('announcementForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            const title = document.getElementById('title').value;
+            const content = document.getElementById('content').value;
+            const timestamp = firebase.firestore.FieldValue.serverTimestamp();
+
+            db.collection('Anuncios').add({
+                Titulo: title,
+                Mensaje: content,
+                FechaCreacion: timestamp
+            }).then((docRef) => {
+                alert('Anuncio agregado');
+
+                // Clear input values after successful submission
+                document.getElementById('title').value = "";
+                document.getElementById('content').value = "";
+
+                // Refresh the list of announcements
+                displayAnnouncements();
+            }).catch((error) => {
+                alert('Error al agregar anuncio: ' + error.message);
+            });
+        });
+
+        // Display announcements on page load
+        window.addEventListener('load', () => {
+            displayAnnouncements();
+        });
+
+        // Function to display announcements
+        function displayAnnouncements() {
+            const announcementList = document.getElementById('announcementList');
+
+            // Clear existing list
+            announcementList.innerHTML = '';
+
+            // Get announcements from Firestore
+            db.collection('Anuncios').orderBy('FechaCreacion', 'desc').get()
+                .then((querySnapshot) => {
+                    querySnapshot.forEach((doc) => {
+                        const data = doc.data();
+                        const listItem = document.createElement('li');
+                        listItem.className = 'list-group-item';
+                        listItem.innerHTML = `
+                            <h5 class="mb-1">${data.Titulo}</h5>
+                            <p class="mb-1">${data.Mensaje}</p>
+                            <small>${new Date(data.FechaCreacion.toDate()).toLocaleString()}</small>
+                            <button class="btn btn-sm btn-danger float-right" onclick="deleteAnnouncement('${doc.id}')">Eliminar</button>
+                            <button class="btn btn-sm btn-primary float-right mr-2" onclick="editAnnouncement('${doc.id}', '${data.Titulo}', '${data.Mensaje}')">Editar</button>
+                        `;
+                        announcementList.appendChild(listItem);
+                    });
+                })
+                .catch((error) => {
+                    console.error('Error al obtener anuncios: ', error);
+                });
+        }
+
+        // Function to delete a specific announcement
+        function deleteAnnouncement(announcementId) {
+            db.collection('Anuncios').doc(announcementId).delete()
+                .then(() => {
+                    alert('Anuncio eliminado');
+                    displayAnnouncements(); // Refresh the list after deletion
+                })
+                .catch((error) => {
+                    console.error('Error al eliminar anuncio: ', error);
+                });
+        }
+
+        // Function to edit a specific announcement
+        function editAnnouncement(announcementId, title, content) {
+            const newTitle = prompt('Nuevo título:', title);
+            const newContent = prompt('Nuevo mensaje:', content);
+
+            if (newTitle !== null && newContent !== null) {
+                db.collection('Anuncios').doc(announcementId).update({
+                    Titulo: newTitle,
+                    Mensaje: newContent
+                })
+                    .then(() => {
+                        alert('Anuncio actualizado');
+                        displayAnnouncements(); // Refresh the list after editing
+                    })
+                    .catch((error) => {
+                        console.error('Error al actualizar anuncio: ', error);
+                    });
+            }
+        }
+
+        // Handle click on "Delete All Announcements" button
+        document.getElementById('deleteAllBtn').addEventListener('click', () => {
+            if (confirm('¿Estás seguro de que deseas eliminar todos los anuncios?')) {
+                // Delete all announcements from Firestore
+                db.collection('Anuncios').get()
+                    .then((querySnapshot) => {
+                        querySnapshot.forEach((doc) => {
+                            doc.ref.delete();
+                        });
+                        alert('Todos los anuncios han sido eliminados');
+                        displayAnnouncements(); // Refresh the list after deleting all announcements
+                    })
+                    .catch((error) => {
+                        console.error('Error al eliminar todos los anuncios: ', error);
+                    });
+            }
+        });
+    </script>
+</body>
+
+</html>

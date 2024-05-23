@@ -1,0 +1,38 @@
+body {
+  background-color: #f8f9fa;
+  color: #343a40;
+  font-family: Arial, sans-serif;
+}
+
+.container {
+  max-width: 600px;
+  margin: 50px auto;
+  padding: 30px;
+  background-color: #fff;
+  border-radius: 10px;
+  box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.1);
+}
+
+h1 {
+  text-align: center;
+  margin-bottom: 30px;
+  color: #007bff;
+}
+
+label {
+  font-weight: bold;
+}
+
+textarea.form-control {
+  min-height: 150px;
+}
+
+button[type="submit"] {
+  background-color: #007bff;
+  border-color: #007bff;
+}
+
+button[type="submit"]:hover {
+  background-color: #0056b3;
+  border-color: #0056b3;
+}
